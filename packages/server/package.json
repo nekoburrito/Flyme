@@ -36,6 +36,9 @@
     "pino-http": "^10.1.0",
     "zod": "^3.23.4"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "devDependencies": {
     "@types/compression": "^1.7.5",
     "@types/cors": "^2.8.17",

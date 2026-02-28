@@ -1,0 +1,113 @@
+// Prisma schema for Flyme
+// https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum ProgramType {
+  credit_card
+  airline
+  hotel
+}
+
+enum RuleTopic {
+  stopover
+  open_jaw
+  fuel_surcharges
+  partner_awards
+  mixed_cabin
+  routing_rules
+  award_expiry
+  cancellation
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+/// A loyalty program — either a credit card rewards currency (source) or an
+/// airline / hotel program (destination for award bookings).
+model Program {
+  id          String      @id @default(cuid())
+  slug        String      @unique
+  name        String
+  shortName   String
+  type        ProgramType
+  logoUrl     String?
+  baselineCpp Float /// Community-consensus valuation in cents per point
+  websiteUrl  String
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  outboundPartners TransferPartner[] @relation("FromProgram")
+  inboundPartners  TransferPartner[] @relation("ToProgram")
+  rules            ProgramRule[]
+}
+
+/// A directed edge in the transfer graph: points can move from `fromProgram`
+/// to `toProgram` at the given `ratio` (points out per point in).
+model TransferPartner {
+  id               String    @id @default(cuid())
+  fromProgramId    String
+  toProgramId      String
+  /// Points received per point sent. 1.0 = 1:1. 0.333 = 3:1.
+  ratio            Float
+  minimumTransfer  Int       @default(1000)
+  transferUnit     Int       @default(1000) /// Transfers must be multiples of this
+  transferTimeDays Int       @default(1) /// 0 = instant
+  bonusPercent     Float     @default(0) /// Current promotional bonus, 0 if none
+  bonusExpiresAt   DateTime?
+  /// Serialised TransferFee[]. Flat amounts in cents, percent in basis points.
+  fees             Json      @default("[]")
+  notes            String?
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  fromProgram Program @relation("FromProgram", fields: [fromProgramId], references: [id])
+  toProgram   Program @relation("ToProgram", fields: [toProgramId], references: [id])
+
+  @@unique([fromProgramId, toProgramId])
+  @@index([fromProgramId])
+  @@index([toProgramId])
+}
+
+/// Qualitative rules about a program (stopovers, fuel surcharges, etc.)
+/// surfaced by the LLM advisor via the `lookup_program_rules` tool.
+model ProgramRule {
+  id             String    @id @default(cuid())
+  programId      String
+  topic          RuleTopic
+  summary        String /// 1–3 sentence plain-English summary for LLM context
+  detail         String /// Full detail; may include examples and caveats
+  isNegative     Boolean   @default(false) /// true = gotcha / downside
+  lastVerifiedAt DateTime
+  sourceUrl      String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  program Program @relation(fields: [programId], references: [id])
+
+  @@index([programId, topic])
+}
+
+/// Generic key/value cache for flight search results and other TTL-bound data.
+model CacheEntry {
+  key       String   @id
+  value     Json
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([expiresAt])
+}
