@@ -1,8 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
+import TransfersPage from './features/transfers/TransfersPage.js';
 
 // Feature pages — add as they are implemented
 // import SearchPage from './features/search/SearchPage.js';
-// import TransfersPage from './features/transfers/TransfersPage.js';
 
 function PlaceholderPage({ title }: { title: string }) {
   return (
@@ -17,7 +17,7 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<PlaceholderPage title="Search" />} />
-      <Route path="/transfers" element={<PlaceholderPage title="Transfer Advisor" />} />
+      <Route path="/transfers" element={<TransfersPage />} />
       <Route path="*" element={<PlaceholderPage title="404 Not Found" />} />
     </Routes>
   );

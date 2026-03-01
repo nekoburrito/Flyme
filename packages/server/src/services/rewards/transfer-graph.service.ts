@@ -82,6 +82,35 @@ function estimateFeeCents(
 }
 
 // ---------------------------------------------------------------------------
+// Explicit DB row types (Prisma client may not be generated in all envs)
+// ---------------------------------------------------------------------------
+
+type ProgramRow = {
+  id: string;
+  slug: string;
+  name: string;
+  shortName: string;
+  type: string;
+  logoUrl: string | null;
+  websiteUrl: string;
+  baselineCpp: number;
+  isActive: boolean;
+};
+
+type PartnerRow = {
+  id: string;
+  fromProgramId: string;
+  toProgramId: string;
+  ratio: number;
+  minimumTransfer: number;
+  transferUnit: number;
+  transferTimeDays: number;
+  bonusPercent: number;
+  fees: unknown;
+  isActive: boolean;
+};
+
+// ---------------------------------------------------------------------------
 // Service
 // ---------------------------------------------------------------------------
 
@@ -94,8 +123,8 @@ export class TransferGraphService {
 
   async initialize(): Promise<void> {
     const [dbPrograms, dbPartners] = await Promise.all([
-      prisma.program.findMany({ where: { isActive: true } }),
-      prisma.transferPartner.findMany({ where: { isActive: true } }),
+      prisma.program.findMany({ where: { isActive: true } }) as Promise<ProgramRow[]>,
+      prisma.transferPartner.findMany({ where: { isActive: true } }) as Promise<PartnerRow[]>,
     ]);
 
     // Build slug → LoyaltyProgram map

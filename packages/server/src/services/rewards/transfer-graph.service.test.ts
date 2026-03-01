@@ -149,7 +149,9 @@ async function buildService(
 // ---------------------------------------------------------------------------
 
 describe("TransferGraphService", () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
 
   // ── Lifecycle ─────────────────────────────────────────────────────────────
 
